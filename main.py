@@ -1,4 +1,5 @@
 import os
+import base64
 from datetime import datetime
 
 import pymysql
@@ -32,16 +33,17 @@ def get_database_connection():
 
 
 def update_database(email):
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     connection = get_database_connection()
     cursor = connection.cursor()
-    cursor.execute(f"UPDATE user SET email_sent_time = {current_time}, verified = {False} WHERE email = {email}")
+    query = f"UPDATE user SET email_sent_time = '{current_time}', email_verified = {False} WHERE username = '{email}'"
+    cursor.execute(query)
     connection.commit()
 
 
 def send_email(email):
     recipient_name = email.split("@")[0]
-    verification_link = f"http://ngavini.me:8000/v1/verify_user?email={email}"
+    verification_link = f"http://ngavini.me:8000/v1/verify_email/{email}"
     url = f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages"
     auth = ("api", MAILGUN_API_KEY)
     data = {
@@ -63,25 +65,25 @@ def send_email(email):
 
 def process_message(email):
     try:
-        #send_email(email)
+        send_email(email)
         update_database(email)
     except Exception as e:
         print(f"Error processing message: {e}")
 
 
 def pubsub_listener(event, context):
-    email_id = event.get('data', {}).get('emailId')
+    email_id = base64.b64decode(event['data']).decode('utf-8')
     if email_id:
+        email_id = email_id.strip()
         process_message(email_id)
     else:
         print(f"no email found, payload: {event}")
 
 
-# Entry point
 if __name__ == "__main__":
+    email_id = "gavini.n+7@northeastern.edu"
+    encode_val = base64.b64encode(email_id.encode("utf-8"))
     event = {
-        "data":  {
-            "emailId": "gavini.n@northeastern.edu"
-        }
+        "data":  encode_val
     }
     pubsub_listener(event, None)
