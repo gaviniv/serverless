@@ -1,4 +1,5 @@
 import os
+import json
 import base64
 from datetime import datetime
 
@@ -72,7 +73,8 @@ def process_message(email):
 
 
 def pubsub_listener(event, context):
-    email_id = base64.b64decode(event['data']).decode('utf-8')
+    json_data = base64.b64decode(event['data']).decode('utf-8')
+    email_id = json.loads(json_data)['email_id']
     if email_id:
         email_id = email_id.strip()
         process_message(email_id)
@@ -81,9 +83,11 @@ def pubsub_listener(event, context):
 
 
 if __name__ == "__main__":
-    email_id = "gavini.n+7@northeastern.edu"
-    encode_val = base64.b64encode(email_id.encode("utf-8"))
     event = {
-        "data":  encode_val
+        "data": {
+            "email_id": "gavini.n+7@northeastern.edu"
+        }
     }
+    event = json.dumps(event)
+    event = event.encode('utf-8')
     pubsub_listener(event, None)
