@@ -44,7 +44,7 @@ def update_database(email):
 
 def send_email(email):
     recipient_name = email.split("@")[0]
-    verification_link = f"http://ngavini.me:8000/v1/verify_email/{email}"
+    verification_link = f"https://ngavini.me/v1/verify_email/{email}"
     url = f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages"
     auth = ("api", MAILGUN_API_KEY)
     data = {
